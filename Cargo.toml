@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-latex"
-version = "0.7.1"
+version = "0.8.0"
 authors = ["Charles Edward Gagnon"]
 edition = "2021"
 description = "Pull parser to convert LaTeX equations to MathML"
@@ -35,6 +35,11 @@ doc-scrape-examples = true
 [[test]]
 name = "wikipedia"
 path = "tests/wikipedia.rs"
+harness = false
+
+[[test]]
+name = "fonts"
+path = "tests/fonts.rs"
 harness = false
 
 [[test]]

@@ -24,8 +24,8 @@ use std::fmt::Display;
 /// by [`Event::Begin`] and [`Event::End`], an [`Event::Visual`] or an [`Event::Script`] element,
 /// an [`Event::Space`], or an [`Event::StateChange`].
 ///
-/// [`Event::Alignment`]s, and [`Event::NewLine`]s are not considered elements, and must never
-/// occur when an element is expected.
+/// [`EnvironmentFlow::Alignment`] and [`EnvironmentFlow::NewLine`] events are not considered
+/// elements, and must never occur when an element is expected.
 ///
 /// ### Examples
 ///
@@ -90,6 +90,8 @@ pub enum Event<'a> {
         width: Option<Dimension>,
         /// The amount of space to add after the element.
         height: Option<Dimension>,
+        /// The amount of depth (space below the baseline) to add.
+        depth: Option<Dimension>,
     },
     /// This event specifies a state change in the renderer.
     ///
@@ -236,6 +238,10 @@ pub enum Font {
     BoldItalic,
     /// The bold font-face.
     Bold,
+    /// The `\boldsymbol` font-face: bold italic for characters that are italic
+    /// by default (Latin letters, lowercase Greek), bold upright for characters
+    /// that are upright by default (capital Greek, digits).
+    BoldSymbol,
     /// The fraktur font-face.
     Fraktur,
     /// The calligraphic font-face.
@@ -246,6 +252,9 @@ pub enum Font {
     SansSerif,
     /// The double-struck font-face.
     DoubleStruck,
+    /// The double-struck italic font-face. Covers the 5 letters at U+2145–U+2149
+    /// (ⅅ, ⅆ, ⅇ, ⅈ, ⅉ); no other characters have double-struck italic forms in Unicode.
+    DoubleStruckItalic,
     /// The italic font-face.
     Italic,
     /// The bold fraktur font-face.

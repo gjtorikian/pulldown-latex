@@ -446,7 +446,11 @@ where
                 self.writer.write_all(b">")
             }
 
-            Ok(Event::Space { width, height }) => {
+            Ok(Event::Space {
+                width,
+                height,
+                depth,
+            }) => {
                 if let Some(width) = width {
                     write!(self.writer, "<mspace width=\"{}\"", width)?;
                     if width.value < 0. {
@@ -455,6 +459,9 @@ where
                 }
                 if let Some(height) = height {
                     write!(self.writer, " height=\"{}\"", height)?;
+                }
+                if let Some(depth) = depth {
+                    write!(self.writer, " depth=\"{}\"", depth)?;
                 }
                 self.writer.write_all(b" />")
             }
@@ -476,7 +483,7 @@ where
                     self.env_stack.last()
                 {
                     array_close_line(&mut self.writer, &cols[*cols_index..])?;
-                } else if let Some(Environment::Group(EnvGrouping::Equation { .. })) =
+                } else if let Some(Environment::Group(EnvGrouping::Equation)) =
                     self.env_stack.last()
                 {
                     // LaTeX does _nothing_ when a newline is encountered in an eqution, we do the
@@ -596,7 +603,21 @@ where
                 if text.starts_with(char::is_whitespace) {
                     self.writer.write_all(b"&nbsp;")?;
                 }
-                write_escaped(&mut self.writer, trimmed)?;
+                match self.state().font {
+                    None => write_escaped(&mut self.writer, trimmed)?,
+                    Some(font) => {
+                        for c in trimmed.chars() {
+                            match font.map_char(c) {
+                                '&' => self.writer.write_all(b"&amp;")?,
+                                '<' => self.writer.write_all(b"&lt;")?,
+                                '>' => self.writer.write_all(b"&gt;")?,
+                                mapped => self
+                                    .writer
+                                    .write_all(mapped.encode_utf8(&mut buf).as_bytes())?,
+                            }
+                        }
+                    }
+                }
                 if text.ends_with(char::is_whitespace) {
                     self.writer.write_all(b"&nbsp;")?;
                 }
@@ -608,7 +629,13 @@ where
                 self.writer.write_all(b">")?;
                 let buf = &mut [0u8; 4];
                 number.chars().try_for_each(|c| {
-                    let content = self.state().font.map_or(c, |v| v.map_char(c));
+                    // `BoldSymbol` collapses to `Bold` for digits, since no italic
+                    // Unicode math variant exists for digits.
+                    let font = match self.state().font {
+                        Some(Font::BoldSymbol) => Some(Font::Bold),
+                        other => other,
+                    };
+                    let content = font.map_or(c, |v| v.map_char(c));
                     let bytes = content.encode_utf8(buf);
                     self.writer.write_all(bytes.as_bytes())
                 })?;
@@ -664,8 +691,17 @@ where
                             self.writer.write_all(b" mathvariant=\"normal\">")?;
                             content
                         }
-                        (Some(font), _) => {
+                        (Some(font), should_be_upright) => {
                             self.writer.write_all(b">")?;
+                            let font = if font == Font::BoldSymbol {
+                                if should_be_upright {
+                                    Font::Bold
+                                } else {
+                                    Font::BoldItalic
+                                }
+                            } else {
+                                font
+                            };
                             font.map_char(content)
                         }
                         _ => {
@@ -1381,6 +1417,11 @@ impl Font {
             (Font::DoubleStruck, 'Z') => c as u32 + 0x20CA,
             (Font::DoubleStruck, 'a'..='z') => c as u32 + 0x1D4F1,
             (Font::DoubleStruck, '0'..='9') => c as u32 + 0x1D7A8,
+
+            // Double Struck Italic mappings (U+2145–U+2149): only D, d, e, i, j exist.
+            (Font::DoubleStruckItalic, 'D') => c as u32 + 0x2101,
+            (Font::DoubleStruckItalic, 'd' | 'e') => c as u32 + 0x20E2,
+            (Font::DoubleStruckItalic, 'i' | 'j') => c as u32 + 0x20DF,
 
             // Italic mappings
             (Font::Italic, 'A'..='Z') => c as u32 + 0x1D3F3,
