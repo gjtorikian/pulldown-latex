@@ -528,7 +528,10 @@ struct ExpansionSpan<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::event::{Content, DelimiterType, Font, RelationContent, StateChange, Visual};
+    use crate::event::{
+        Content, DelimiterType, Dimension, DimensionUnit, Font, RelationContent, StateChange,
+        Visual,
+    };
 
     use super::*;
 
@@ -920,6 +923,26 @@ mod tests {
         assert!(!events
             .iter()
             .any(|e| matches!(e, Event::Content(Content::Identifier(_)))));
+    }
+
+    #[test]
+    fn struts() {
+        let store = Storage::new();
+
+        for (input, height) in [(r"\mathstrut", 0.7), (r"\strut", 1.0)] {
+            let events = Parser::new(input, &store)
+                .collect::<Result<Vec<_>, ParserError>>()
+                .unwrap();
+
+            assert_eq!(
+                events,
+                vec![Event::Space {
+                    width: None,
+                    height: Some(Dimension::new(height, DimensionUnit::Em)),
+                    depth: None,
+                }]
+            );
+        }
     }
 
     #[test]

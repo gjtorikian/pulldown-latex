@@ -24,8 +24,8 @@ use std::fmt::Display;
 /// by [`Event::Begin`] and [`Event::End`], an [`Event::Visual`] or an [`Event::Script`] element,
 /// an [`Event::Space`], or an [`Event::StateChange`].
 ///
-/// [`EnvironmentFlow::Alignment`]s, and [`EnvironmentFlow::NewLine`]s are not considered elements,
-/// and must never occur when an element is expected.
+/// [`EnvironmentFlow::Alignment`] and [`EnvironmentFlow::NewLine`] events are not considered
+/// elements, and must never occur when an element is expected.
 ///
 /// ### Examples
 ///
